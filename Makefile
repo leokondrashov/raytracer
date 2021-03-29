@@ -12,6 +12,6 @@ clean:
 	rm *.o
 	rm raytracer
 
-raytracer: vector.o bmp.o triangle.o
+raytracer: vector.o bmp.o triangle.o textProcessor/textProcessor.o
 
 -include *.d
