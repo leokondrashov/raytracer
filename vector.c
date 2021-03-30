@@ -80,11 +80,9 @@ void cross(const vector *l, const vector *r, vector *res) {
 }
 
 double mixed(const vector *a, const vector *b, const vector *c) {
-	vector *tmp = new_zvector();
-	cross(b, c, tmp);
-	double d = dot(a, tmp);
-	free(tmp);
-	return d;
+	return a->x * (b->y * c->z - b->z * c->y) -
+	       a->y * (b->x * c->z - b->z * c->x) +
+	       a->z * (b->x * c->y - b->y * c->x);
 }
 
 double len_sq(const vector *v) {
