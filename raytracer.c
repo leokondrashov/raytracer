@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < t_n; ++i)
 		delete_triangle(t[i]);
 	free(t);
 
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 	free(origin);
 	free(P);
 
-	for (int i = 0; i < 1; ++i) 
+	for (int i = 0; i < l_n; ++i)
 		free(l[i]);
 	free(l);
 
