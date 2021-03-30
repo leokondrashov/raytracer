@@ -16,6 +16,8 @@ void assign(vector *v, const vector *u);
 void add(const vector *l, const vector *r, vector *res);
 void sub(const vector *l, const vector *r, vector *res);
 void mul(const vector *l, double r, vector *res);
+void move(vector *v, const vector *oth);
+void scale(vector *v, double factor);
 
 double dot(const vector *l, const vector *r);
 void cross(const vector *l, const vector *r, vector *res);

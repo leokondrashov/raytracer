@@ -24,12 +24,13 @@ int collision(const vector *ray, const vector *origin, const triangle *t, vector
 	if (!collided || proj < 0)
 		return 0;
 
-	vector *tmp = new_zvector();
-	assign(P, ray);
-	mul(P, proj, tmp);
-	*r = len_sq(tmp);
-	add(origin, tmp, P);
-	free(tmp);
+	*r = len_sq(ray) * proj * proj;
+
+	if (P != NULL) {
+		assign(P, ray);
+		scale(P, proj);
+		move(P, origin);
+	}
 
 	return 1;
 }
@@ -59,31 +60,30 @@ double pixel_color(const vector *ray, const vector *origin, triangle *const *t,
 	double color = 0;
 	if (collided) {
 		vector *new_ray = new_zvector();
-		vector *tmp = new_zvector();
 
 		for (int i = 0; i < l_n; ++i) {
-			sub(min_P, l[i], tmp);
+			sub(min_P, l[i], new_ray);
 			int min_j = -1;
 			min_dist = -1;
 			for (int j = 0; j < t_n; ++j) {
-				if (collision(tmp, l[i], t[j], P, &r) && 
+				if (collision(new_ray, l[i], t[j], NULL, &r) &&
 				    (r < min_dist || min_dist == -1)) {
 					min_dist = r;
 					min_j = j;
 				}
 			}
 
-			double cos = -dot(t[min_i]->n, tmp) / len(t[min_i]->n) / len(tmp);
+			double cos = -dot(t[min_i]->n, new_ray) /
+			             len(t[min_i]->n) / len(new_ray);
 			color += (cos > 0 && min_j == min_i) ? cos : 0;
 		}
 
-		assign(P, t[min_i]->n);
-		mul(P, 2 * dot(ray, t[min_i]->n) / len_sq(t[min_i]->n), tmp);
-		sub(ray, tmp, new_ray);
+		assign(new_ray, t[min_i]->n);
+		scale(new_ray, -2 * dot(ray, new_ray) / len_sq(new_ray));
+		move(new_ray, ray);
 		color = color * (1 - t[min_i]->reflect) +
 		       	pixel_color(new_ray, min_P, t, t_n, min_i, l, l_n) * t[min_i]->reflect;
 		free(new_ray);
-		free(tmp);
 	}
 
 	free(P);

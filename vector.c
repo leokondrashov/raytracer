@@ -55,6 +55,18 @@ void mul(const vector *l, double r, vector *res) {
 		 l->z * r);
 }
 
+void move(vector *v, const vector *oth) {
+	v->x += oth->x;
+	v->y += oth->y;
+	v->z += oth->z;
+}
+
+void scale(vector *v, double factor) {
+	v->x *= factor;
+	v->y *= factor;
+	v->z *= factor;
+}
+
 double dot(const vector *l, const vector *r) {
 	return l->x * r->x +
 	       l->y * r->y +
