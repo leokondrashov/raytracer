@@ -10,7 +10,7 @@
 #define HEIGHT 1024
 
 int collision(const vector *ray, const vector *origin, const triangle *t, vector *P, double *r) {
-	vector ABC[3];
+	static vector ABC[3];
 	sub(t->A, origin, &(ABC[0]));
 	sub(t->B, origin, &(ABC[1]));
 	sub(t->C, origin, &(ABC[2]));
@@ -36,58 +36,77 @@ int collision(const vector *ray, const vector *origin, const triangle *t, vector
 }
 
 double pixel_color(const vector *ray, const vector *origin, triangle *const *t, 
-                   int t_n, int skip, vector *const *l, int l_n) {
+                   int t_n, vector *const *l, int l_n) {
 	double min_dist = -1;
 	int min_i = -1;
-	vector *min_P = new_zvector();
+	static vector min_P;
 
-	vector *P = new_zvector();
+	static vector P;
 	double r = 0;
 	int collided = 0;
-	for (int i = 0; i < t_n; ++i) {
-		if (i == skip) 
-			continue;
+	int skip = -1;
 
-		if (collision(ray, origin, t[i], P, &r) && 
-		    (r < min_dist || min_dist == -1)) {
-			collided = 1;
-			min_dist = r;
-			min_i = i;
-			assign(min_P, P);
-		}
-	}
-
+	double weight = 1;
 	double color = 0;
-	if (collided) {
-		vector *new_ray = new_zvector();
+	double cur_light = 0;
 
-		for (int i = 0; i < l_n; ++i) {
-			sub(min_P, l[i], new_ray);
-			int min_j = -1;
-			min_dist = -1;
-			for (int j = 0; j < t_n; ++j) {
-				if (collision(new_ray, l[i], t[j], NULL, &r) &&
-				    (r < min_dist || min_dist == -1)) {
-					min_dist = r;
-					min_j = j;
+	static vector new_ray;
+	static vector o;
+	assign(&o, origin);
+	static vector R;
+	assign(&R, ray);
+
+	do {
+		collided = 0;
+		min_dist = -1;
+		min_i = -1;
+		r = 0;
+
+		for (int i = 0; i < t_n; ++i) {
+			if (i == skip) 
+				continue;
+
+			if (collision(&R, &o, t[i], &P, &r) && 
+			    (r < min_dist || min_dist == -1)) {
+				collided = 1;
+				min_dist = r;
+				min_i = i;
+				assign(&min_P, &P);
+			}
+		}
+
+		if (collided) {
+			cur_light = 0;
+
+			for (int i = 0; i < l_n; ++i) {
+				sub(&min_P, l[i], &new_ray);
+				int min_j = -1;
+				min_dist = -1;
+				for (int j = 0; j < t_n; ++j) {
+					if (collision(&new_ray, l[i], t[j], NULL, &r) &&
+					    (r < min_dist || min_dist == -1)) {
+						min_dist = r;
+						min_j = j;
+					}
 				}
+
+				double cos = -dot(t[min_i]->n, &new_ray) /
+					     len(t[min_i]->n) / len(&new_ray);
+				cur_light += (cos > 0 && min_j == min_i) ? cos : 0;
 			}
 
-			double cos = -dot(t[min_i]->n, new_ray) /
-			             len(t[min_i]->n) / len(new_ray);
-			color += (cos > 0 && min_j == min_i) ? cos : 0;
+			assign(&new_ray, t[min_i]->n);
+			scale(&new_ray, -2 * dot(&R, &new_ray) / len_sq(&new_ray));
+			move(&new_ray, &R);
+			color += cur_light * (1 - t[min_i]->reflect) * weight;
+			weight *= t[min_i]->reflect;
+
+			assign(&R, &new_ray);
+			assign(&o, &min_P);
+			skip = min_i;
 		}
+	} while (collided);
 
-		assign(new_ray, t[min_i]->n);
-		scale(new_ray, -2 * dot(ray, new_ray) / len_sq(new_ray));
-		move(new_ray, ray);
-		color = color * (1 - t[min_i]->reflect) +
-		       	pixel_color(new_ray, min_P, t, t_n, min_i, l, l_n) * t[min_i]->reflect;
-		free(new_ray);
-	}
-
-	free(P);
-	free(min_P);
 	return color;
 }
 
@@ -151,8 +170,7 @@ int main(int argc, char **argv) {
 		for (int j = 0; j < WIDTH; ++j) {
 			set(pixel, -1 + 2.0 / WIDTH * j, -1 + 2.0 / HEIGHT * i, 1);
 			sub(pixel, origin, ray);
-			data[i * WIDTH + j] = 255 * pixel_color(ray, origin, t, t_n, -1,
-			                                        l, l_n) / l_n;
+			data[i * WIDTH + j] = 255 * pixel_color(ray, origin, t, t_n, l, l_n) / l_n;
 		}
 	}
 
